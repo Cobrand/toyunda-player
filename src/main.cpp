@@ -38,10 +38,15 @@ static void on_mpv_redraw( void *ctx )
     SDL_PushEvent( &event );
 }
 
-using mpv_handle_ptr = mpv_handle *;
-
 namespace MPV
 {
+using mpv_handle_ptr = mpv_handle *;
+
+struct mpv_handle_deleter {
+    void operator()( mpv_handle *ptr ) { mpv_terminate_destroy( ptr ); }
+};
+
+using handle_ptr = std::unique_ptr< mpv_handle, mpv_handle_deleter >;
 mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr mpv, mpv_sub_api api )
 {
     using type = mpv_opengl_cb_context;
@@ -73,7 +78,7 @@ int main( int argc, char *argv[] )
 {
     if( argc != 2 ) die( "pass a single media file as argument" );
 
-    mpv_handle *mpv = mpv_create();
+    MPV::handle_ptr mpv{mpv_create()};
     if( !mpv ) {
         die( "context init failed" );
     }
