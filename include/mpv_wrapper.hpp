@@ -28,14 +28,14 @@ class Handle_ptr
 using mpv_handle_ptr = Handle_ptr;
 
 enum class sub_api : int { OPENGL_CB = 1 };
-mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr mpv, sub_api api );
+mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr &mpv, sub_api api );
 
 class openGL_CB_context
 {
     // TODO : remplacer par un unique_ptr ???
   public:
     using type = mpv_opengl_cb_context;
-    openGL_CB_context( mpv_handle_ptr mpv, sub_api api );
+    openGL_CB_context( mpv_handle_ptr &mpv, sub_api api );
     type const *get() const;
     type *get();
     ~openGL_CB_context();

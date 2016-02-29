@@ -18,7 +18,7 @@ Handle_ptr::type const *Handle_ptr::get() const { return mpv; }
 Handle_ptr::type *Handle_ptr::get() { return mpv; }
 Handle_ptr::~Handle_ptr() { mpv_terminate_destroy( mpv ); }
 
-mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr mpv, sub_api api )
+mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr &mpv, sub_api api )
 {
     using type = mpv_opengl_cb_context;
     static std::map< sub_api, mpv_sub_api > conv_table{
@@ -27,7 +27,7 @@ mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr mpv, sub_api api )
         mpv_get_sub_api( mpv.get(), conv_table[api] ) );
 }
 
-openGL_CB_context::openGL_CB_context( mpv_handle_ptr mpv, sub_api api )
+openGL_CB_context::openGL_CB_context( mpv_handle_ptr &mpv, sub_api api )
     : mpv_gl{get_sub_api( mpv, api )}
 {
     if( !mpv_gl ) {
