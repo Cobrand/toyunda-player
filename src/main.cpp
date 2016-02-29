@@ -87,9 +87,9 @@ int main( int argc, char *argv[] )
         die( "failed to create SDL GL context" );
     }
 
-    mpv_gl.init_gl( get_proc_address_mpv );
+    init_gl( mpv_gl, get_proc_address_mpv );
 
-    mpv.set_option_string( "vo", "opengl-cb" );
+    set_option_string( mpv, "vo", "opengl-cb" );
 
     // We use events for thread-safe notification of the SDL main loop.
     // Generally, the wakeup callbacks (set further below) should do as least
@@ -120,10 +120,10 @@ int main( int argc, char *argv[] )
     while( !finished ) {
         SDL_Event event;
         if( SDL_WaitEvent( &event ) != 1 ) {
-            throw "event loop error";
+            throw std::runtime_error( "event loop error" );
         }
 
-        int redraw = false;
+        bool redraw = false;
         switch( event.type ) {
             case SDL_QUIT: finished = true;
             case SDL_WINDOWEVENT:
