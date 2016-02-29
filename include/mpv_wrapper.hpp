@@ -44,11 +44,11 @@ class openGL_CB_context
   private:
     type *mpv_gl;
 };
-void init_gl( openGL_CB_context &ctx,
-              mpv_opengl_cb_get_proc_address_fn get_proc_address,
-              void *get_proc_address_ctx = nullptr );
-void init_gl( openGL_CB_context &ctx,
-              std::string extensions,
-              mpv_opengl_cb_get_proc_address_fn get_proc_address,
-              void *get_proc_address_ctx = nullptr );
+void opengl_cb_init_gl( openGL_CB_context &ctx,
+                        mpv_opengl_cb_get_proc_address_fn get_proc_address,
+                        void *get_proc_address_ctx = nullptr );
+void opengl_cb_init_gl( openGL_CB_context &ctx,
+                        std::string extensions,
+                        mpv_opengl_cb_get_proc_address_fn get_proc_address,
+                        void *get_proc_address_ctx = nullptr );
 }

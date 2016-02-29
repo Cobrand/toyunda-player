@@ -44,19 +44,19 @@ openGL_CB_context::openGL_CB_context( mpv_handle_ptr &mpv, sub_api api )
 openGL_CB_context::type const *openGL_CB_context::get() const { return mpv_gl; }
 openGL_CB_context::type *openGL_CB_context::get() { return mpv_gl; }
 openGL_CB_context::~openGL_CB_context() { mpv_opengl_cb_uninit_gl( mpv_gl ); }
-void init_gl( openGL_CB_context &ctx,
-              mpv_opengl_cb_get_proc_address_fn get_proc_address,
-              void *get_proc_address_ctx )
+void opengl_cb_init_gl( openGL_CB_context &ctx,
+                        mpv_opengl_cb_get_proc_address_fn get_proc_address,
+                        void *get_proc_address_ctx )
 {
     if( mpv_opengl_cb_init_gl(
             ctx.get(), NULL, get_proc_address, get_proc_address_ctx ) < 0 ) {
         throw std::runtime_error( "failed to initialize mpv GL context" );
     }
 }
-void init_gl( openGL_CB_context &ctx,
-              std::string extensions,
-              mpv_opengl_cb_get_proc_address_fn get_proc_address,
-              void *get_proc_address_ctx )
+void opengl_cb_init_gl( openGL_CB_context &ctx,
+                        std::string extensions,
+                        mpv_opengl_cb_get_proc_address_fn get_proc_address,
+                        void *get_proc_address_ctx )
 {
     if( mpv_opengl_cb_init_gl( ctx.get(),
                                extensions.c_str(),

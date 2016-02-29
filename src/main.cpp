@@ -87,9 +87,9 @@ int main( int argc, char *argv[] )
         die( "failed to create SDL GL context" );
     }
 
-    init_gl( mpv_gl, get_proc_address_mpv );
+    MPV::opengl_cb_init_gl( mpv_gl, get_proc_address_mpv );
 
-    set_option_string( mpv, "vo", "opengl-cb" );
+    MPV::set_option_string( mpv, "vo", "opengl-cb" );
 
     // We use events for thread-safe notification of the SDL main loop.
     // Generally, the wakeup callbacks (set further below) should do as least
