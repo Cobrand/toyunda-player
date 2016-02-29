@@ -1,1 +1,11 @@
 bin/
+
+# cmake
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+Makefile
+*.cmake
+!FindMPV.cmake
+!compil-option.cmake
+!testing.cmake
