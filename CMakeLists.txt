@@ -43,8 +43,7 @@ INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIRS} ${SDL2IMAGE_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${MPV_INCLUDES_DIR})
 
 add_executable(${PROJECT_NAME} ${SRC})
-#target_link_libraries(${PROJECT_NAME} /usr/local/lib/libdocopt.so)
-#target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY})
+target_link_libraries(${PROJECT_NAME} /usr/local/lib/libdocopt.so)
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${SDL2_LIBRARIES} ${SDL2IMAGE_LIBRARIES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${MPV_LIBRARY})
 

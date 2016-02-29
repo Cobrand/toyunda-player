@@ -4,7 +4,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdexcept>
+#include <map>
+#include <docopt/docopt.h>
+
+#include "mpv_wrapper.hpp"
 
 extern "C" {
 #include <SDL.h>
@@ -13,6 +16,7 @@ extern "C" {
 #include <mpv/opengl_cb.h>
 }
 
+extern "C" {
 static Uint32 wakeup_on_mpv_redraw, wakeup_on_mpv_events;
 
 static void die( const char *msg )
@@ -37,71 +41,25 @@ static void on_mpv_redraw( void *ctx )
     SDL_Event event = {.type = wakeup_on_mpv_redraw};
     SDL_PushEvent( &event );
 }
-
-namespace MPV
-{
-
-using mpv_handle_ptr = mpv_handle *;
-
-class Handle_ptr
-{
-  public:
-    using type = mpv_handle;
-
-    Handle_ptr() : mpv{mpv_create()}
-    {
-        if( !mpv ) {
-            throw std::runtime_error( "context init failed" );
-        }
-        if( mpv_initialize( mpv ) < 0 ) {
-            throw std::runtime_error( "mpv init failed" );
-        }
-    }
-    type const *const get() const { return mpv; }
-    type const *get() { return mpv; }
-    ~Handle_ptr() { mpv_terminate_destroy( mpv ); }
-
-  private:
-    type *mpv;
-};
-
-mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr mpv, mpv_sub_api api )
-{
-    using type = mpv_opengl_cb_context;
-    return (type *)mpv_get_sub_api( mpv, api );
-}
-
-class openGL_CB_context
-{
-    // TODO : remplacer par un unique_ptr ???
-  public:
-    using type = mpv_opengl_cb_context;
-    openGL_CB_context( mpv_handle_ptr mpv, mpv_sub_api api )
-        : mpv_gl{get_sub_api( mpv, api )}
-    {
-        if( !mpv_gl ) {
-            throw std::runtime_error( "failed to create mpv GL API handle" );
-        }
-    }
-    type const *const get() const { return mpv_gl; }
-    type *const get() { return mpv_gl; }
-    ~openGL_CB_context() { mpv_opengl_cb_uninit_gl( mpv_gl ); }
-
-  private:
-    type *mpv_gl;
-};
 }
 
 int main( int argc, char *argv[] )
 {
-    if( argc != 2 ) die( "pass a single media file as argument" );
+    constexpr char USAGE[]{
+        R"(mvdir.
+     Usage:
+     player <file>
+    )"};
+
+    std::map< std::string, docopt::value > args{
+        docopt::docopt( USAGE, {argv + 1, argv + argc}, true, "player" )};
+    auto const mediaFile = args["<file>"].asString();
 
     MPV::Handle_ptr mpv{};
 
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         die( "SDL init failed" );
     }
-
     SDL_Window *window = SDL_CreateWindow(
         "Toyunda Player",
         SDL_WINDOWPOS_CENTERED,
@@ -115,7 +73,7 @@ int main( int argc, char *argv[] )
 
     // The OpenGL API is somewhat separate from the normal mpv API. This only
     // returns NULL if no OpenGL support is compiled.
-    MPV::openGL_CB_context mpv_gl{mpv, MPV_SUB_API_OPENGL_CB};
+    MPV::openGL_CB_context mpv_gl{mpv, MPV::sub_api::OPENGL_CB};
 
     SDL_GLContext glcontext = SDL_GL_CreateContext( window );
     if( !glcontext ) {
@@ -131,7 +89,7 @@ int main( int argc, char *argv[] )
 
     // Actually using the opengl_cb state has to be explicitly requested.
     // Otherwise, mpv will create a separate platform window.
-    if( mpv_set_option_string( mpv, "vo", "opengl-cb" ) < 0 ) {
+    if( mpv_set_option_string( mpv.get(), "vo", "opengl-cb" ) < 0 ) {
         die( "failed to set VO" );
     }
 
@@ -148,7 +106,7 @@ int main( int argc, char *argv[] )
     }
 
     // When normal mpv events are available.
-    mpv_set_wakeup_callback( mpv, on_mpv_events, NULL );
+    mpv_set_wakeup_callback( mpv.get(), on_mpv_events, NULL );
 
     // When a new frame should be drawn with mpv_opengl_cb_draw().
     // (Separate from the normal event handling mechanism for the sake of
@@ -156,10 +114,10 @@ int main( int argc, char *argv[] )
     mpv_opengl_cb_set_update_callback( mpv_gl.get(), on_mpv_redraw, NULL );
 
     // Play this file. Note that this starts playback asynchronously.
-    const char *cmd[] = {"loadfile", argv[1], NULL};
-    mpv_command( mpv, cmd );
+    const char *cmd[] = {"loadfile", mediaFile.c_str(), NULL};
+    mpv_command( mpv.get(), cmd );
     double speed = 1.0;
-    mpv_set_property( mpv, "speed", MPV_FORMAT_DOUBLE, &speed );
+    mpv_set_property( mpv.get(), "speed", MPV_FORMAT_DOUBLE, &speed );
     bool finished = false;
     while( !finished ) {
         SDL_Event event;
@@ -177,7 +135,7 @@ int main( int argc, char *argv[] )
                 break;
             case SDL_KEYDOWN:
                 if( event.key.keysym.sym == SDLK_SPACE ) {
-                    mpv_command_string( mpv, "cycle pause" );
+                    mpv_command_string( mpv.get(), "cycle pause" );
                 }
                 break;
             default:
@@ -190,7 +148,7 @@ int main( int argc, char *argv[] )
                 if( event.type == wakeup_on_mpv_events ) {
                     // Handle all remaining mpv events.
                     while( 1 ) {
-                        mpv_event *mp_event = mpv_wait_event( mpv, 0 );
+                        mpv_event *mp_event = mpv_wait_event( mpv.get(), 0 );
                         if( mp_event->event_id == MPV_EVENT_NONE ) {
                             break;
                         }
@@ -219,6 +177,5 @@ int main( int argc, char *argv[] )
         }
     }
 done:
-    mpv_terminate_destroy( mpv );
     return 0;
 }
