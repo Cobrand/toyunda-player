@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdexcept>
 
 extern "C" {
 #include <SDL.h>
@@ -49,11 +50,15 @@ mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr mpv, mpv_sub_api api )
 
 class openGL_CB_context
 {
+    // TODO : remplacer par un unique_ptr ???
   public:
     using type = mpv_opengl_cb_context;
     openGL_CB_context( mpv_handle_ptr mpv, mpv_sub_api api )
         : mpv_gl{get_sub_api( mpv, api )}
     {
+        if( !mpv_gl ) {
+            throw std::runtime_error( "failed to create mpv GL API handle" );
+        }
     }
     type const *const get() const { return mpv_gl; }
     type *const get() { return mpv_gl; }
@@ -95,11 +100,7 @@ int main( int argc, char *argv[] )
 
     // The OpenGL API is somewhat separate from the normal mpv API. This only
     // returns NULL if no OpenGL support is compiled.
-    mpv_opengl_cb_context *mpv_gl =
-        (mpv_opengl_cb_context *)mpv_get_sub_api( mpv, MPV_SUB_API_OPENGL_CB );
-    if( !mpv_gl ) {
-        die( "failed to create mpv GL API handle" );
-    }
+    MPV::openGL_CB_context mpv_gl{mpv, MPV_SUB_API_OPENGL_CB};
 
     SDL_GLContext glcontext = SDL_GL_CreateContext( window );
     if( !glcontext ) {
@@ -108,8 +109,8 @@ int main( int argc, char *argv[] )
 
     // This makes mpv use the currently set GL context. It will use the callback
     // to resolve GL builtin functions, as well as extensions.
-    if( mpv_opengl_cb_init_gl( mpv_gl, NULL, get_proc_address_mpv, NULL ) <
-        0 ) {
+    if( mpv_opengl_cb_init_gl(
+            mpv_gl.get(), NULL, get_proc_address_mpv, NULL ) < 0 ) {
         die( "failed to initialize mpv GL context" );
     }
 
@@ -137,7 +138,7 @@ int main( int argc, char *argv[] )
     // When a new frame should be drawn with mpv_opengl_cb_draw().
     // (Separate from the normal event handling mechanism for the sake of
     //  users which run OpenGL on a different thread.)
-    mpv_opengl_cb_set_update_callback( mpv_gl, on_mpv_redraw, NULL );
+    mpv_opengl_cb_set_update_callback( mpv_gl.get(), on_mpv_redraw, NULL );
 
     // Play this file. Note that this starts playback asynchronously.
     const char *cmd[] = {"loadfile", argv[1], NULL};
@@ -198,16 +199,11 @@ int main( int argc, char *argv[] )
             //   render to a FBO.
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
-            mpv_opengl_cb_draw( mpv_gl, 0, w, -h );
+            mpv_opengl_cb_draw( mpv_gl.get(), 0, w, -h );
             SDL_GL_SwapWindow( window );
         }
     }
 done:
-
-    // Destroy the GL renderer and all of the GL objects it allocated. If video
-    // is still running, the video track will be deselected.
-    mpv_opengl_cb_uninit_gl( mpv_gl );
-
     mpv_terminate_destroy( mpv );
     return 0;
 }
