@@ -50,7 +50,14 @@ struct free_sdl_window {
     void operator()( ptr &win ) { SDL_DestroyWindow( win ); }
 };
 
-using SDL_Window_ptr = std::unique_ptr< SDL_Window, free_sdl_window >;
+namespace SDL
+{
+using Window_ptr = std::unique_ptr< SDL_Window, free_sdl_window >;
+void GetWindowSize( Window_ptr &window, int &w, int &h )
+{
+    SDL_GetWindowSize( window.get(), &w, &h );
+}
+}
 
 int main( int argc, char *argv[] )
 {
@@ -69,7 +76,7 @@ int main( int argc, char *argv[] )
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         die( "SDL init failed" );
     }
-    SDL_Window_ptr window{SDL_CreateWindow(
+    SDL::Window_ptr window{SDL_CreateWindow(
         "Toyunda Player",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
@@ -160,7 +167,7 @@ int main( int argc, char *argv[] )
         }
         if( redraw ) {
             int w, h;
-            SDL_GetWindowSize( window.get(), &w, &h );
+            SDL::GetWindowSize( window, w, h );
             // Note:
             // - The 0 is the FBO to use; 0 is the default framebuffer (i.e.
             //   render to the window directly.
