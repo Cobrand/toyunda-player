@@ -22,7 +22,7 @@ endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang"
  OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using Clang or gcc
-    add_flag(CMAKE_CXX_FLAGS                -std=c++11)
+    add_flag(CMAKE_CXX_FLAGS                -std=c++1z)
     add_flag(CMAKE_CXX_FLAGS                -Wall)
     add_flag(CMAKE_CXX_FLAGS                -Wextra)
     add_flag(CMAKE_CXX_FLAGS                -pedantic)

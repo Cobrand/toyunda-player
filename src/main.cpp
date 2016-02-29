@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <map>
+#include <memory>
+
 #include <docopt/docopt.h>
 
 #include "mpv_wrapper.hpp"
@@ -43,16 +45,23 @@ static void on_mpv_redraw( void *ctx )
 }
 }
 
+struct free_sdl_window {
+    using ptr = SDL_Window *;
+    void operator()( ptr &win ) { SDL_DestroyWindow( win ); }
+};
+
+using SDL_Window_ptr = std::unique_ptr< SDL_Window, free_sdl_window >;
+
 int main( int argc, char *argv[] )
 {
     constexpr char USAGE[]{
-        R"(mvdir.
+        R"(toyunda-player.
      Usage:
-     player <file>
+     toyounda-player <file>
     )"};
 
-    std::map< std::string, docopt::value > args{
-        docopt::docopt( USAGE, {argv + 1, argv + argc}, true, "player" )};
+    std::map< std::string, docopt::value > args{docopt::docopt(
+        USAGE, {argv + 1, argv + argc}, true, "toyounda-player" )};
     auto const mediaFile = args["<file>"].asString();
 
     MPV::Handle_ptr mpv{};
@@ -60,13 +69,13 @@ int main( int argc, char *argv[] )
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         die( "SDL init failed" );
     }
-    SDL_Window *window = SDL_CreateWindow(
+    SDL_Window_ptr window{SDL_CreateWindow(
         "Toyunda Player",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         1000,
         500,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
+        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE )};
     if( !window ) {
         die( "failed to create SDL window" );
     }
@@ -75,7 +84,7 @@ int main( int argc, char *argv[] )
     // returns NULL if no OpenGL support is compiled.
     MPV::openGL_CB_context mpv_gl{mpv, MPV::sub_api::OPENGL_CB};
 
-    SDL_GLContext glcontext = SDL_GL_CreateContext( window );
+    SDL_GLContext glcontext = SDL_GL_CreateContext( window.get() );
     if( !glcontext ) {
         die( "failed to create SDL GL context" );
     }
@@ -162,7 +171,7 @@ int main( int argc, char *argv[] )
         }
         if( redraw ) {
             int w, h;
-            SDL_GetWindowSize( window, &w, &h );
+            SDL_GetWindowSize( window.get(), &w, &h );
             // Note:
             // - The 0 is the FBO to use; 0 is the default framebuffer (i.e.
             //   render to the window directly.
@@ -173,7 +182,7 @@ int main( int argc, char *argv[] )
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
             mpv_opengl_cb_draw( mpv_gl.get(), 0, w, -h );
-            SDL_GL_SwapWindow( window );
+            SDL_GL_SwapWindow( window.get() );
         }
     }
 done:
