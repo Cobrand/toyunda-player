@@ -40,13 +40,31 @@ static void on_mpv_redraw( void *ctx )
 
 namespace MPV
 {
+
 using mpv_handle_ptr = mpv_handle *;
 
-struct mpv_handle_deleter {
-    void operator()( mpv_handle *ptr ) { mpv_terminate_destroy( ptr ); }
+class Handle_ptr
+{
+  public:
+    using type = mpv_handle;
+
+    Handle_ptr() : mpv{mpv_create()}
+    {
+        if( !mpv ) {
+            throw std::runtime_error( "context init failed" );
+        }
+        if( mpv_initialize( mpv ) < 0 ) {
+            throw std::runtime_error( "mpv init failed" );
+        }
+    }
+    type const *const get() const { return mpv; }
+    type const *get() { return mpv; }
+    ~Handle_ptr() { mpv_terminate_destroy( mpv ); }
+
+  private:
+    type *mpv;
 };
 
-using handle_ptr = std::unique_ptr< mpv_handle, mpv_handle_deleter >;
 mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr mpv, mpv_sub_api api )
 {
     using type = mpv_opengl_cb_context;
@@ -78,15 +96,7 @@ int main( int argc, char *argv[] )
 {
     if( argc != 2 ) die( "pass a single media file as argument" );
 
-    MPV::handle_ptr mpv{mpv_create()};
-    if( !mpv ) {
-        die( "context init failed" );
-    }
-
-    // Some minor options can only be set before mpv_initialize().
-    if( mpv_initialize( mpv ) < 0 ) {
-        die( "mpv init failed" );
-    }
+    MPV::Handle_ptr mpv{};
 
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         die( "SDL init failed" );
