@@ -16,6 +16,12 @@ Handle_ptr::Handle_ptr() : mpv{mpv_create()}
 }
 Handle_ptr::type const *Handle_ptr::get() const { return mpv; }
 Handle_ptr::type *Handle_ptr::get() { return mpv; }
+void Handle_ptr::set_option_string( std::string name, std::string data )
+{
+    if( mpv_set_option_string( mpv, name.c_str(), data.c_str() ) < 0 ) {
+        throw std::runtime_error( "failed to set VO" );
+    }
+}
 Handle_ptr::~Handle_ptr() { mpv_terminate_destroy( mpv ); }
 
 mpv_opengl_cb_context *get_sub_api( mpv_handle_ptr &mpv, sub_api api )
@@ -37,4 +43,25 @@ openGL_CB_context::openGL_CB_context( mpv_handle_ptr &mpv, sub_api api )
 openGL_CB_context::type const *openGL_CB_context::get() const { return mpv_gl; }
 openGL_CB_context::type *openGL_CB_context::get() { return mpv_gl; }
 openGL_CB_context::~openGL_CB_context() { mpv_opengl_cb_uninit_gl( mpv_gl ); }
+void openGL_CB_context::init_gl(
+    mpv_opengl_cb_get_proc_address_fn get_proc_address,
+    void *get_proc_address_ctx )
+{
+    if( mpv_opengl_cb_init_gl(
+            mpv_gl, NULL, get_proc_address, get_proc_address_ctx ) < 0 ) {
+        throw std::runtime_error( "failed to initialize mpv GL context" );
+    }
+}
+void openGL_CB_context::init_gl(
+    std::string extensions,
+    mpv_opengl_cb_get_proc_address_fn get_proc_address,
+    void *get_proc_address_ctx )
+{
+    if( mpv_opengl_cb_init_gl( mpv_gl,
+                               extensions.c_str(),
+                               get_proc_address,
+                               get_proc_address_ctx ) < 0 ) {
+        throw std::runtime_error( "failed to initialize mpv GL context" );
+    }
+}
 }

@@ -19,6 +19,7 @@ class Handle_ptr
     Handle_ptr();
     type const *get() const;
     type *get();
+    void set_option_string( std::string name, std::string data );
     ~Handle_ptr();
 
   private:
@@ -38,6 +39,11 @@ class openGL_CB_context
     openGL_CB_context( mpv_handle_ptr &mpv, sub_api api );
     type const *get() const;
     type *get();
+    void init_gl( mpv_opengl_cb_get_proc_address_fn get_proc_address,
+                  void *get_proc_address_ctx = nullptr );
+    void init_gl( std::string extensions,
+                  mpv_opengl_cb_get_proc_address_fn get_proc_address,
+                  void *get_proc_address_ctx = nullptr );
     ~openGL_CB_context();
 
   private:

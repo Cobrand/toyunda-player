@@ -27,18 +27,18 @@ static void die( const char *msg )
     exit( 1 );
 }
 
-static void *get_proc_address_mpv( void *fn_ctx, const char *name )
+static void *get_proc_address_mpv( void *, const char *name )
 {
     return SDL_GL_GetProcAddress( name );
 }
 
-static void on_mpv_events( void *ctx )
+static void on_mpv_events( void * )
 {
     SDL_Event event = {.type = wakeup_on_mpv_events};
     SDL_PushEvent( &event );
 }
 
-static void on_mpv_redraw( void *ctx )
+static void on_mpv_redraw( void * )
 {
     SDL_Event event = {.type = wakeup_on_mpv_redraw};
     SDL_PushEvent( &event );
@@ -80,8 +80,6 @@ int main( int argc, char *argv[] )
         die( "failed to create SDL window" );
     }
 
-    // The OpenGL API is somewhat separate from the normal mpv API. This only
-    // returns NULL if no OpenGL support is compiled.
     MPV::openGL_CB_context mpv_gl{mpv, MPV::sub_api::OPENGL_CB};
 
     SDL_GLContext glcontext = SDL_GL_CreateContext( window.get() );
@@ -89,18 +87,9 @@ int main( int argc, char *argv[] )
         die( "failed to create SDL GL context" );
     }
 
-    // This makes mpv use the currently set GL context. It will use the callback
-    // to resolve GL builtin functions, as well as extensions.
-    if( mpv_opengl_cb_init_gl(
-            mpv_gl.get(), NULL, get_proc_address_mpv, NULL ) < 0 ) {
-        die( "failed to initialize mpv GL context" );
-    }
+    mpv_gl.init_gl( get_proc_address_mpv );
 
-    // Actually using the opengl_cb state has to be explicitly requested.
-    // Otherwise, mpv will create a separate platform window.
-    if( mpv_set_option_string( mpv.get(), "vo", "opengl-cb" ) < 0 ) {
-        die( "failed to set VO" );
-    }
+    mpv.set_option_string( "vo", "opengl-cb" );
 
     // We use events for thread-safe notification of the SDL main loop.
     // Generally, the wakeup callbacks (set further below) should do as least
@@ -185,6 +174,5 @@ int main( int argc, char *argv[] )
             SDL_GL_SwapWindow( window.get() );
         }
     }
-done:
     return 0;
 }
