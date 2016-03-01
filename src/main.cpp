@@ -7,7 +7,7 @@
 #include <map>
 #include <memory>
 
-#include <docopt/docopt.h>
+#include <docopt.h>
 
 #include "mpv_wrapper.hpp"
 
