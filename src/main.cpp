@@ -64,12 +64,16 @@ int main( int argc, char *argv[] )
     constexpr char USAGE[]{
         R"(toyunda-player.
      Usage:
-     toyounda-player <file>
+         toyounda-player [options] <file>
+
+     Options:
+         --invert  invert the screen
     )"};
 
     std::map< std::string, docopt::value > args{docopt::docopt(
         USAGE, {argv + 1, argv + argc}, true, "toyounda-player" )};
     auto const mediaFile = args["<file>"].asString();
+    const int factor     = args["--invert"].asBool() ? 1 : -1;
 
     MPV::Handle_ptr mpv{};
 
@@ -177,7 +181,7 @@ int main( int argc, char *argv[] )
             //   render to a FBO.
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
-            mpv_opengl_cb_draw( mpv_gl.get(), 0, w, -h );
+            mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h );
             SDL_GL_SwapWindow( window.get() );
         }
     }
