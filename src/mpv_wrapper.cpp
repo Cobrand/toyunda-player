@@ -14,8 +14,11 @@ Handle_ptr::Handle_ptr() : mpv{mpv_create()}
         throw std::runtime_error( "mpv init failed" );
     }
 }
+
 Handle_ptr::type const *Handle_ptr::get() const { return mpv; }
+
 Handle_ptr::type *Handle_ptr::get() { return mpv; }
+
 void set_option_string( Handle_ptr &handle, std::string name, std::string data )
 {
     if( mpv_set_option_string( handle.get(), name.c_str(), data.c_str() ) <
@@ -41,9 +44,13 @@ openGL_CB_context::openGL_CB_context( mpv_handle_ptr &mpv, sub_api api )
         throw std::runtime_error( "failed to create mpv GL API handle" );
     }
 }
+
 openGL_CB_context::type const *openGL_CB_context::get() const { return mpv_gl; }
+
 openGL_CB_context::type *openGL_CB_context::get() { return mpv_gl; }
+
 openGL_CB_context::~openGL_CB_context() { mpv_opengl_cb_uninit_gl( mpv_gl ); }
+
 void opengl_cb_init_gl( openGL_CB_context &ctx,
                         mpv_opengl_cb_get_proc_address_fn get_proc_address,
                         void *get_proc_address_ctx )
@@ -53,6 +60,7 @@ void opengl_cb_init_gl( openGL_CB_context &ctx,
         throw std::runtime_error( "failed to initialize mpv GL context" );
     }
 }
+
 void opengl_cb_init_gl( openGL_CB_context &ctx,
                         std::string extensions,
                         mpv_opengl_cb_get_proc_address_fn get_proc_address,
