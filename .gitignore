@@ -1,5 +1,5 @@
 bin/
-
+build/
 # cmake
 CMakeCache.txt
 CMakeFiles/
