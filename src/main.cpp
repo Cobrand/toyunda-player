@@ -160,36 +160,12 @@ int main( int argc, char *argv[] )
         }
 
         bool redraw = false;
-        switch( event.type ) {
-            case SDL_QUIT: finished = true;
-            case SDL_WINDOWEVENT:
-                if( event.window.event == SDL_WINDOWEVENT_EXPOSED ) {
-                    redraw = true;
-                }
+        switch( handler.handle( event ) ) {
+            case SDL::Event_Dispatcher::Result::finished:
+                finished = true;
                 break;
-            case SDL_KEYDOWN:
-                if( event.key.keysym.sym == SDLK_SPACE ) {
-                    mpv_command_string( mpv.get(), "cycle pause" );
-                }
-                break;
-            default:
-                // Happens when a new video frame should be rendered, or if the
-                // current frame has to be redrawn e.g. due to OSD changes.
-                if( event.type == wakeup_on_mpv_redraw ) {
-                    redraw = true;
-                }
-                // Happens when at least 1 new event is in the mpv event queue.
-                if( event.type == wakeup_on_mpv_events ) {
-                    // Handle all remaining mpv events.
-                    while( 1 ) {
-                        mpv_event *mp_event = mpv_wait_event( mpv.get(), 0 );
-                        if( mp_event->event_id == MPV_EVENT_NONE ) {
-                            break;
-                        }
-                        std::cout << mpv_event_name( mp_event->event_id )
-                                  << "\n";
-                    }
-                }
+            case SDL::Event_Dispatcher::Result::redraw: redraw = true; break;
+            default: break;
         }
         if( true == finished ) {
             break;
