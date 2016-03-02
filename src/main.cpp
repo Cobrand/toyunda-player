@@ -4,15 +4,14 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <windows.h>
 
 extern "C" {
-    #include <SDL.h>
+    #include <SDL2/SDL.h>
 
     #include <mpv/client.h>
     #include <mpv/opengl_cb.h>
 }
-
-
 
 static Uint32 wakeup_on_mpv_redraw, wakeup_on_mpv_events;
 
@@ -39,10 +38,20 @@ static void on_mpv_redraw(void *ctx)
     SDL_PushEvent(&event);
 }
 
+int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, 
+LPSTR szCmdLine, int iCmdShow){
+	/*
+	return 0 ;
+}
+
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
+	*/
+	char * argv[] = {"toyunda_player","pote.avi"};
+	int argc = 2 ;
+    if (argc != 2){
         die("pass a single media file as argument");
+	}
 
     mpv_handle *mpv = mpv_create();
     if (!mpv){
