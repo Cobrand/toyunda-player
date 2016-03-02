@@ -185,5 +185,6 @@ int main( int argc, char *argv[] )
             SDL_GL_SwapWindow( window.get() );
         }
     }
+    SDL_Quit();
     return 0;
 }
