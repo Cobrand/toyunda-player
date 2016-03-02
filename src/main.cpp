@@ -6,13 +6,15 @@
 #include <stdlib.h>
 #include <map>
 #include <memory>
+#include <vector>
 
-#include <docopt.h>
+#include "docopt.h"
 
 #include "mpv_wrapper.hpp"
 
 extern "C" {
-#include <SDL.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #include <mpv/client.h>
 #include <mpv/opengl_cb.h>
@@ -121,7 +123,14 @@ int main( int argc, char *argv[] )
     // (Separate from the normal event handling mechanism for the sake of
     //  users which run OpenGL on a different thread.)
     mpv_opengl_cb_set_update_callback( mpv_gl.get(), on_mpv_redraw, NULL );
-
+    TTF_Init();
+    std::vector<TTF_Font*> fonts = {};
+    for ( int font_size = 18 ; font_size <= 192 ; font_size+=2 ){
+        auto font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSansMono.ttf",font_size);
+        TTF_SetFontOutline(font,1+(font_size/20));
+        fonts.push_back(font);
+    }
+    auto subtitles = TTF_RenderUTF8_Solid(fonts[5],"Salût tu es mon pote",{255,0,0,255});
     // Play this file. Note that this starts playback asynchronously.
     const char *cmd[] = {"loadfile", mediaFile.c_str(), NULL};
     mpv_command( mpv.get(), cmd );
@@ -181,10 +190,19 @@ int main( int argc, char *argv[] )
             //   render to a FBO.
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
-            mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h );
+            mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h ); 
+            SDL_Rect dest = {100,100,100,100};
+            SDL_BlitSurface(subtitles,NULL,SDL_GetWindowSurface(window.get()),&dest);
+            SDL_UpdateWindowSurface(window.get());
+            
             SDL_GL_SwapWindow( window.get() );
         }
     }
+    for ( auto font : fonts ){
+        TTF_CloseFont(font);
+    }
+    SDL_FreeSurface(subtitles);
+    TTF_Quit();
     SDL_Quit();
     return 0;
 }
