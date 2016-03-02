@@ -12,6 +12,7 @@
 #include <docopt.h>
 
 #include "mpv_wrapper.hpp"
+#include "sdl_wrapper.hpp"
 
 extern "C" {
 #include <SDL.h>
@@ -45,51 +46,6 @@ static void on_mpv_redraw( void * )
     SDL_Event event = {.type = wakeup_on_mpv_redraw};
     SDL_PushEvent( &event );
 }
-}
-
-struct free_sdl_window {
-    using ptr = SDL_Window *;
-    void operator()( ptr &win ) { SDL_DestroyWindow( win ); }
-};
-
-template < typename T >
-constexpr std::size_t as_index( T t )
-{
-    return static_cast< std::size_t >( t );
-}
-
-namespace SDL
-{
-using Window_ptr = std::unique_ptr< SDL_Window, free_sdl_window >;
-void GetWindowSize( Window_ptr &window, int &w, int &h )
-{
-    SDL_GetWindowSize( window.get(), &w, &h );
-}
-class Event_Dispatcher
-{
-  public:
-    enum class Result : uint { redraw, finished, none, _MAX };
-    using Event_type = decltype( std::declval< SDL_Event >().type );
-    using Callback   = std::function< Result( SDL_Event & ) >;
-    // voir si on met des signaux (boost::signal2)
-    Event_Dispatcher() = default;
-    void register_event( Event_type e, Callback cb )
-    {
-        events[e] = std::move( cb );
-    }
-    Result handle( SDL_Event &evts )
-    {
-        if( events.find( evts ) == events.end() ) {
-            throw std::runtime_error( "Event not handled" );
-        }
-        Event_type e = evts.type;
-        return events[e]( evts );
-    }
-    ~Event_Dispatcher() = default;
-
-  private:
-    std::map< Event_type, Callback > events;
-};
 }
 
 int main( int argc, char *argv[] )
@@ -161,6 +117,42 @@ int main( int argc, char *argv[] )
     double speed = 1.0;
     mpv_set_property( mpv.get(), "speed", MPV_FORMAT_DOUBLE, &speed );
     bool finished = false;
+    SDL::Event_Dispatcher handler;
+    handler.register_event(
+        SDL_QUIT,
+        []( SDL_Event & ) { return SDL::Event_Dispatcher::Result::finished; } );
+    handler.register_event(
+        SDL_WINDOWEVENT,
+        []( SDL_Event &evt ) {
+            if( evt.window.event == SDL_WINDOWEVENT_EXPOSED ) {
+                return SDL::Event_Dispatcher::Result::redraw;
+            }
+            return SDL::Event_Dispatcher::Result::none;
+        } );
+    handler.register_event( SDL_KEYDOWN,
+                            [&mpv]( SDL_Event &evt ) {
+                                if( evt.key.keysym.sym == SDLK_SPACE ) {
+                                    mpv_command_string( mpv.get(),
+                                                        "cycle pause" );
+                                }
+                                return SDL::Event_Dispatcher::Result::none;
+                            } );
+    handler.register_event( wakeup_on_mpv_redraw,
+                            []( SDL_Event &evt ) {
+                                return SDL::Event_Dispatcher::Result::redraw;
+                            } );
+    handler.register_event(
+        wakeup_on_mpv_events,
+        [&mpv]( SDL_Event & ) {
+            while( 1 ) {
+                mpv_event *mp_event = mpv_wait_event( mpv.get(), 0 );
+                if( mp_event->event_id == MPV_EVENT_NONE ) {
+                    break;
+                }
+                std::cout << mpv_event_name( mp_event->event_id ) << "\n";
+            }
+            return SDL::Event_Dispatcher::Result::none;
+        } );
     while( !finished ) {
         SDL_Event event;
         if( SDL_WaitEvent( &event ) != 1 ) {
