@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <map>
 #include <memory>
+#include <utility>
+#include <functional>
 
 #include <docopt.h>
 
@@ -50,6 +52,12 @@ struct free_sdl_window {
     void operator()( ptr &win ) { SDL_DestroyWindow( win ); }
 };
 
+template < typename T >
+constexpr std::size_t as_index( T t )
+{
+    return static_cast< std::size_t >( t );
+}
+
 namespace SDL
 {
 using Window_ptr = std::unique_ptr< SDL_Window, free_sdl_window >;
@@ -57,6 +65,31 @@ void GetWindowSize( Window_ptr &window, int &w, int &h )
 {
     SDL_GetWindowSize( window.get(), &w, &h );
 }
+class Event_Dispatcher
+{
+  public:
+    enum class Result : uint { redraw, finished, none, _MAX };
+    using Event_type = decltype( std::declval< SDL_Event >().type );
+    using Callback   = std::function< Result( SDL_Event & ) >;
+    // voir si on met des signaux (boost::signal2)
+    Event_Dispatcher() = default;
+    void register_event( Event_type e, Callback cb )
+    {
+        events[e] = std::move( cb );
+    }
+    Result handle( SDL_Event &evts )
+    {
+        if( events.find( evts ) == events.end() ) {
+            throw std::runtime_error( "Event not handled" );
+        }
+        Event_type e = evts.type;
+        return events[e]( evts );
+    }
+    ~Event_Dispatcher() = default;
+
+  private:
+    std::map< Event_type, Callback > events;
+};
 }
 
 int main( int argc, char *argv[] )
