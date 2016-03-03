@@ -23,7 +23,7 @@ void set_option_string( Handle_ptr &handle, std::string name, std::string data )
 {
     if( mpv_set_option_string( handle.get(), name.c_str(), data.c_str() ) <
         0 ) {
-        throw std::runtime_error( "failed to set VO" );
+        throw std::runtime_error( "failed to set " + name );
     }
 }
 Handle_ptr::~Handle_ptr() { mpv_terminate_destroy( mpv ); }
