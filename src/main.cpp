@@ -1,9 +1,6 @@
 // Build with: gcc -o main main.c `pkg-config --libs --cflags mpv sdl2`
 
 #include <iostream>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <map>
 #include <memory>
 #include <utility>
@@ -14,21 +11,14 @@
 #include "mpv_wrapper.hpp"
 #include "sdl_wrapper.hpp"
 
-extern "C" {
 #include <SDL2/SDL.h>
 
 #include <mpv/client.h>
 #include <mpv/opengl_cb.h>
-}
+
 
 extern "C" {
 static Uint32 wakeup_on_mpv_redraw, wakeup_on_mpv_events;
-
-static void die( const char *msg )
-{
-    fprintf( stderr, "%s\n", msg );
-    exit( 1 );
-}
 
 static void *get_proc_address_mpv( void *, const char *name )
 {
@@ -67,7 +57,7 @@ int main( int argc, char *argv[] )
     MPV::Handle_ptr mpv{};
 
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
-        die( "SDL init failed" );
+        throw std::runtime_error("failed to init SDL");
     }
     SDL::Window_ptr window{SDL_CreateWindow(
         "Toyunda Player",
@@ -77,14 +67,14 @@ int main( int argc, char *argv[] )
         500,
         SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE )};
     if( !window ) {
-        die( "failed to create SDL window" );
+        throw std::runtime_error("failed to create SDL window");
     }
 
     MPV::openGL_CB_context mpv_gl{mpv, MPV::sub_api::OPENGL_CB};
 
     SDL_GLContext glcontext = SDL_GL_CreateContext( window.get() );
     if( !glcontext ) {
-        die( "failed to create SDL GL context" );
+        throw std::runtime_error("failed to create GL context");
     }
 
     MPV::opengl_cb_init_gl( mpv_gl, get_proc_address_mpv );
@@ -100,7 +90,7 @@ int main( int argc, char *argv[] )
     wakeup_on_mpv_events = SDL_RegisterEvents( 1 );
     if( wakeup_on_mpv_redraw == (Uint32)-1 ||
         wakeup_on_mpv_events == (Uint32)-1 ) {
-        die( "could not register events" );
+        throw std::runtime_error("could not register wakeup_mpv events");
     }
 
     // When normal mpv events are available.
