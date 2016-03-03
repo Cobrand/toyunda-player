@@ -159,31 +159,14 @@ int main( int argc, char *argv[] )
             throw std::runtime_error( "event loop error" );
         }
 
-        bool redraw = false;
         switch( handler.handle( event ) ) {
             case SDL::Event_Dispatcher::Result::finished:
                 finished = true;
                 break;
-            case SDL::Event_Dispatcher::Result::redraw: redraw = true; break;
+            case SDL::Event_Dispatcher::Result::redraw:
+                SDL::redraw( window, mpv_gl, factor );
+                break;
             default: break;
-        }
-        if( true == finished ) {
-            break;
-        }
-        if( redraw ) {
-            int w, h;
-            SDL::GetWindowSize( window, w, h );
-            // Note:
-            // - The 0 is the FBO to use; 0 is the default framebuffer (i.e.
-            //   render to the window directly.
-            // - The negative height tells mpv to flip the coordinate system.
-            // - If you do not want the video to cover the whole screen, or want
-            //   to apply any form of fancy transformation, you will have to
-            //   render to a FBO.
-            // - See opengl_cb.h on what OpenGL environment mpv expects, and
-            //   other API details.
-            mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h );
-            SDL_GL_SwapWindow( window.get() );
         }
     }
     SDL_Quit();

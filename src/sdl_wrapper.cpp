@@ -12,6 +12,14 @@ void GetWindowSize( Window_ptr &window, int &w, int &h )
     SDL_GetWindowSize( window.get(), &w, &h );
 }
 
+void redraw( Window_ptr &window, MPV::openGL_CB_context &mpv_gl, int factor )
+{
+    int w, h;
+    GetWindowSize( window, w, h );
+    mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h );
+    SDL_GL_SwapWindow( window.get() );
+}
+
 void Event_Dispatcher::register_event( Event_Dispatcher::Event_type e,
                                        Event_Dispatcher::Callback cb )
 {

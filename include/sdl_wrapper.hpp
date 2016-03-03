@@ -4,6 +4,8 @@
 #include <functional>
 #include <map>
 
+#include "mpv_wrapper.hpp"
+
 extern "C" {
 #include <SDL.h>
 }
@@ -23,6 +25,7 @@ namespace SDL
 {
 using Window_ptr = std::unique_ptr< SDL_Window, free_sdl_window >;
 void GetWindowSize( Window_ptr &window, int &w, int &h );
+void redraw( Window_ptr &window, MPV::openGL_CB_context &mpv_gl, int factor );
 
 class Event_Dispatcher
 {
