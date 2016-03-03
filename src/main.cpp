@@ -128,6 +128,10 @@ int main( int argc, char *argv[] )
     std::vector<TTF_Font*> fonts = {};
     for ( int font_size = 18 ; font_size <= 192 ; font_size+=2 ){
         auto font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSansMono.ttf",font_size);
+        if (font == nullptr){
+            std::cerr << "Could not find DejaVuSansMono.tff, please be decent and install it, thx" << std::endl ;
+            return 1 ;
+        }
         TTF_SetFontOutline(font,1+(font_size/20));
         fonts.push_back(font);
     }
