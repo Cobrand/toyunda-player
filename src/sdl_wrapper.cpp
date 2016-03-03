@@ -19,6 +19,9 @@ void redraw( Window_ptr &window, MPV::openGL_CB_context &mpv_gl, int factor )
     int w, h;
     GetWindowSize( window, w, h );
     mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h );
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // OPEN GL CODE HERE
+    //
     SDL_GL_SwapWindow( window.get() );
 }
 

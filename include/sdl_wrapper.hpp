@@ -7,7 +7,8 @@
 #include "mpv_wrapper.hpp"
 
 extern "C" {
-#include <SDL.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 }
 
 struct free_sdl_window {

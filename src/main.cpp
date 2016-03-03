@@ -15,7 +15,7 @@
 #include "sdl_wrapper.hpp"
 
 extern "C" {
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #include <mpv/client.h>
 #include <mpv/opengl_cb.h>
