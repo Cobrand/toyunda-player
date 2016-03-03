@@ -42,9 +42,7 @@ Event_Dispatcher::Result Event_Dispatcher::handle( SDL_Event &evts )
 }
 Event_Dispatcher build( MPV::Handle_ptr &mpv,
                         Uint32 wakeup_on_mpv_redraw,
-                        void ( *on_mpv_redraw )( void * ),
                         Uint32 wakeup_on_mpv_events,
-                        void ( *on_mpv_events )( void * ),
                         double &speed )
 {
     SDL::Event_Dispatcher handler;

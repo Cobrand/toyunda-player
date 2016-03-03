@@ -17,27 +17,22 @@
 #include <mpv/opengl_cb.h>
 
 
-extern "C" {
 static Uint32 wakeup_on_mpv_redraw, wakeup_on_mpv_events;
-
-static void *get_proc_address_mpv( void *, const char *name )
+/*
+void on_mpv_events( void * )
 {
-    return SDL_GL_GetProcAddress( name );
-}
-
-static void on_mpv_events( void * )
-{
-    SDL_Event event = {.type = wakeup_on_mpv_events};
+    SDL_Event event ;
+    event.type = wakeup_on_mpv_events;
     SDL_PushEvent( &event );
 }
 
-static void on_mpv_redraw( void * )
+void on_mpv_redraw( void * )
 {
-    SDL_Event event = {.type = wakeup_on_mpv_redraw};
+    SDL_Event event ;
+    event.type = wakeup_on_mpv_redraw;
     SDL_PushEvent( &event );
 }
-}
-
+*/
 int main( int argc, char *argv[] )
 {
     constexpr char USAGE[]{
@@ -77,29 +72,27 @@ int main( int argc, char *argv[] )
         throw std::runtime_error("failed to create GL context");
     }
 
-    MPV::opengl_cb_init_gl( mpv_gl, get_proc_address_mpv );
+    MPV::opengl_cb_init_gl( mpv_gl, [](void *, const char *name){
+        return SDL_GL_GetProcAddress( name );
+    });
 
     MPV::set_option_string( mpv, "vo", "opengl-cb" );
 
-    // We use events for thread-safe notification of the SDL main loop.
-    // Generally, the wakeup callbacks (set further below) should do as least
-    // work as possible, and merely wake up another thread to do actual work.
-    // On SDL, waking up the mainloop is the ideal course of action. SDL's
-    // SDL_PushEvent() is thread-safe, so we use that.
-    wakeup_on_mpv_redraw = SDL_RegisterEvents( 1 );
+
     wakeup_on_mpv_events = SDL_RegisterEvents( 1 );
-    if( wakeup_on_mpv_redraw == (Uint32)-1 ||
-        wakeup_on_mpv_events == (Uint32)-1 ) {
-        throw std::runtime_error("could not register wakeup_mpv events");
-    }
+    mpv_set_wakeup_callback( mpv.get(), [](void*) {
+        SDL_Event event ;
+        event.type = wakeup_on_mpv_events;
+        SDL_PushEvent( &event );
+    }, NULL );
 
-    // When normal mpv events are available.
-    mpv_set_wakeup_callback( mpv.get(), on_mpv_events, NULL );
+    wakeup_on_mpv_redraw = SDL_RegisterEvents( 1 );
+    mpv_opengl_cb_set_update_callback( mpv_gl.get(), [](void*) {
+        SDL_Event event ;
+        event.type = wakeup_on_mpv_redraw;
+        SDL_PushEvent( &event );
+    }, NULL );
 
-    // When a new frame should be drawn with mpv_opengl_cb_draw().
-    // (Separate from the normal event handling mechanism for the sake of
-    //  users which run OpenGL on a different thread.)
-    mpv_opengl_cb_set_update_callback( mpv_gl.get(), on_mpv_redraw, NULL );
 
     // Play this file. Note that this starts playback asynchronously.
     const char *cmd[] = {"loadfile", mediaFile.c_str(), NULL};
@@ -109,9 +102,7 @@ int main( int argc, char *argv[] )
     bool finished                 = false;
     SDL::Event_Dispatcher handler = SDL::build( mpv,
                                                 wakeup_on_mpv_redraw,
-                                                on_mpv_redraw,
                                                 wakeup_on_mpv_events,
-                                                on_mpv_events,
                                                 speed );
     while( !finished ) {
         SDL_Event event;
