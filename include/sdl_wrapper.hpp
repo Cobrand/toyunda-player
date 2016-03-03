@@ -46,4 +46,9 @@ class Event_Dispatcher
   private:
     std::map< Event_type, Callback > events;
 };
+Event_Dispatcher build( MPV::Handle_ptr &mpv,
+                        Uint32 redraw_,
+                        void ( *redraw_f )( void * ),
+                        Uint32 evts,
+                        void ( *evts_f )( void * ) );
 }

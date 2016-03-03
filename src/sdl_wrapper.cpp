@@ -1,5 +1,7 @@
 #include "sdl_wrapper.hpp"
 
+#include <iostream>
+
 void free_sdl_window::operator()( free_sdl_window::ptr &win )
 {
     SDL_DestroyWindow( win );
@@ -33,5 +35,49 @@ Event_Dispatcher::Result Event_Dispatcher::handle( SDL_Event &evts )
     }
     Event_type e = evts.type;
     return events[e]( evts );
+}
+Event_Dispatcher build( MPV::Handle_ptr &mpv,
+                        Uint32 wakeup_on_mpv_redraw,
+                        void ( *on_mpv_redraw )( void * ),
+                        Uint32 wakeup_on_mpv_events,
+                        void ( *on_mpv_events )( void * ) )
+{
+    SDL::Event_Dispatcher handler;
+    handler.register_event(
+        SDL_QUIT,
+        []( SDL_Event & ) { return SDL::Event_Dispatcher::Result::finished; } );
+    handler.register_event(
+        SDL_WINDOWEVENT,
+        []( SDL_Event &evt ) {
+            if( evt.window.event == SDL_WINDOWEVENT_EXPOSED ) {
+                return SDL::Event_Dispatcher::Result::redraw;
+            }
+            return SDL::Event_Dispatcher::Result::none;
+        } );
+    handler.register_event( SDL_KEYDOWN,
+                            [&mpv]( SDL_Event &evt ) {
+                                if( evt.key.keysym.sym == SDLK_SPACE ) {
+                                    mpv_command_string( mpv.get(),
+                                                        "cycle pause" );
+                                }
+                                return SDL::Event_Dispatcher::Result::none;
+                            } );
+    handler.register_event( wakeup_on_mpv_redraw,
+                            []( SDL_Event &evt ) {
+                                return SDL::Event_Dispatcher::Result::redraw;
+                            } );
+    handler.register_event(
+        wakeup_on_mpv_events,
+        [&mpv]( SDL_Event & ) {
+            while( 1 ) {
+                mpv_event *mp_event = mpv_wait_event( mpv.get(), 0 );
+                if( mp_event->event_id == MPV_EVENT_NONE ) {
+                    break;
+                }
+                std::cout << mpv_event_name( mp_event->event_id ) << "\n";
+            }
+            return SDL::Event_Dispatcher::Result::none;
+        } );
+    return std::move( handler );
 }
 }

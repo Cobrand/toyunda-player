@@ -48,47 +48,6 @@ static void on_mpv_redraw( void * )
 }
 }
 
-SDL::Event_Dispatcher build( MPV::Handle_ptr &mpv )
-{
-    SDL::Event_Dispatcher handler;
-    handler.register_event(
-        SDL_QUIT,
-        []( SDL_Event & ) { return SDL::Event_Dispatcher::Result::finished; } );
-    handler.register_event(
-        SDL_WINDOWEVENT,
-        []( SDL_Event &evt ) {
-            if( evt.window.event == SDL_WINDOWEVENT_EXPOSED ) {
-                return SDL::Event_Dispatcher::Result::redraw;
-            }
-            return SDL::Event_Dispatcher::Result::none;
-        } );
-    handler.register_event( SDL_KEYDOWN,
-                            [&mpv]( SDL_Event &evt ) {
-                                if( evt.key.keysym.sym == SDLK_SPACE ) {
-                                    mpv_command_string( mpv.get(),
-                                                        "cycle pause" );
-                                }
-                                return SDL::Event_Dispatcher::Result::none;
-                            } );
-    handler.register_event( wakeup_on_mpv_redraw,
-                            []( SDL_Event &evt ) {
-                                return SDL::Event_Dispatcher::Result::redraw;
-                            } );
-    handler.register_event(
-        wakeup_on_mpv_events,
-        [&mpv]( SDL_Event & ) {
-            while( 1 ) {
-                mpv_event *mp_event = mpv_wait_event( mpv.get(), 0 );
-                if( mp_event->event_id == MPV_EVENT_NONE ) {
-                    break;
-                }
-                std::cout << mpv_event_name( mp_event->event_id ) << "\n";
-            }
-            return SDL::Event_Dispatcher::Result::none;
-        } );
-    return std::move( handler );
-}
-
 int main( int argc, char *argv[] )
 {
     constexpr char USAGE[]{
@@ -158,7 +117,11 @@ int main( int argc, char *argv[] )
     double speed = 1.0;
     mpv_set_property( mpv.get(), "speed", MPV_FORMAT_DOUBLE, &speed );
     bool finished                 = false;
-    SDL::Event_Dispatcher handler = build( mpv );
+    SDL::Event_Dispatcher handler = SDL::build( mpv,
+                                                wakeup_on_mpv_redraw,
+                                                on_mpv_redraw,
+                                                wakeup_on_mpv_events,
+                                                on_mpv_events );
     while( !finished ) {
         SDL_Event event;
         if( SDL_WaitEvent( &event ) != 1 ) {
