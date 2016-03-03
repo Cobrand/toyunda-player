@@ -49,8 +49,6 @@ class Event_Dispatcher
 };
 Event_Dispatcher build( MPV::Handle_ptr &mpv,
                         Uint32 redraw_,
-                        void ( *redraw_f )( void * ),
                         Uint32 evts,
-                        void ( *evts_f )( void * ),
                         double &speed );
 }

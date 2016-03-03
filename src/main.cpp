@@ -116,13 +116,9 @@ int main( int argc, char *argv[] )
     mpv_command( mpv.get(), cmd );
     double speed = 1.0;
     mpv_set_property( mpv.get(), "speed", MPV_FORMAT_DOUBLE, &speed );
-    bool finished                 = false;
-    SDL::Event_Dispatcher handler = SDL::build( mpv,
-                                                wakeup_on_mpv_redraw,
-                                                on_mpv_redraw,
-                                                wakeup_on_mpv_events,
-                                                on_mpv_events,
-                                                speed );
+    bool finished = false;
+    SDL::Event_Dispatcher handler =
+        SDL::build( mpv, wakeup_on_mpv_redraw, wakeup_on_mpv_events, speed );
     while( !finished ) {
         SDL_Event event;
         if( SDL_WaitEvent( &event ) != 1 ) {
