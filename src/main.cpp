@@ -121,7 +121,8 @@ int main( int argc, char *argv[] )
                                                 wakeup_on_mpv_redraw,
                                                 on_mpv_redraw,
                                                 wakeup_on_mpv_events,
-                                                on_mpv_events );
+                                                on_mpv_events,
+                                                speed );
     while( !finished ) {
         SDL_Event event;
         if( SDL_WaitEvent( &event ) != 1 ) {

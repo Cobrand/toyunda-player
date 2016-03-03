@@ -40,7 +40,8 @@ Event_Dispatcher build( MPV::Handle_ptr &mpv,
                         Uint32 wakeup_on_mpv_redraw,
                         void ( *on_mpv_redraw )( void * ),
                         Uint32 wakeup_on_mpv_events,
-                        void ( *on_mpv_events )( void * ) )
+                        void ( *on_mpv_events )( void * ),
+                        double &speed )
 {
     SDL::Event_Dispatcher handler;
     handler.register_event(
@@ -54,14 +55,22 @@ Event_Dispatcher build( MPV::Handle_ptr &mpv,
             }
             return SDL::Event_Dispatcher::Result::none;
         } );
-    handler.register_event( SDL_KEYDOWN,
-                            [&mpv]( SDL_Event &evt ) {
-                                if( evt.key.keysym.sym == SDLK_SPACE ) {
-                                    mpv_command_string( mpv.get(),
-                                                        "cycle pause" );
-                                }
-                                return SDL::Event_Dispatcher::Result::none;
-                            } );
+    handler.register_event(
+        SDL_KEYDOWN,
+        [&mpv, &speed]( SDL_Event &evt ) {
+            if( evt.key.keysym.sym == SDLK_SPACE ) {
+                mpv_command_string( mpv.get(), "cycle pause" );
+            } else if( evt.key.keysym.sym == SDLK_KP_PLUS ) {
+                speed += .5;
+                mpv_set_property(
+                    mpv.get(), "speed", MPV_FORMAT_DOUBLE, &speed );
+            } else if( evt.key.keysym.sym == SDLK_KP_MINUS ) {
+                speed -= .5;
+                mpv_set_property(
+                    mpv.get(), "speed", MPV_FORMAT_DOUBLE, &speed );
+            }
+            return SDL::Event_Dispatcher::Result::none;
+        } );
     handler.register_event( wakeup_on_mpv_redraw,
                             []( SDL_Event &evt ) {
                                 return SDL::Event_Dispatcher::Result::redraw;
