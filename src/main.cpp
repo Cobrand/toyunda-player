@@ -15,6 +15,7 @@
 extern "C" {
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_opengl.h>
 
 #include <mpv/client.h>
 #include <mpv/opengl_cb.h>
@@ -191,10 +192,10 @@ int main( int argc, char *argv[] )
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
             mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h ); 
-            SDL_Rect dest = {100,100,100,100};
-            SDL_BlitSurface(subtitles,NULL,SDL_GetWindowSurface(window.get()),&dest);
-            SDL_UpdateWindowSurface(window.get());
-            
+            //SDL_Rect dest = {100,100,100,100};
+            //SDL_BlitSurface(subtitles,NULL,SDL_GetWindowSurface(window.get()),&dest);
+            //SDL_UpdateWindowSurface(window.get());
+            glClearColor( 0.0f, 0.0f, 0.0f, 0.0f ); 
             SDL_GL_SwapWindow( window.get() );
         }
     }
