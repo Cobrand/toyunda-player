@@ -28,4 +28,12 @@ namespace std{
                 SDL_DestroyWindow(window);
             } ;
     };
-}
+
+    template <>
+    class default_delete <SDL_Surface>{
+        public:
+            void operator()(SDL_Surface* surface) const {
+                SDL_FreeSurface(surface);
+            }
+    };
+}   
