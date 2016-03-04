@@ -9,7 +9,9 @@ namespace std{
     class default_delete <mpv_handle>{
         public:
             void operator()(mpv_handle* mpv) const {
-                mpv_terminate_destroy(mpv);
+                if (mpv != nullptr){
+                    mpv_terminate_destroy(mpv);
+                }
             } ;
     };
 
@@ -17,7 +19,9 @@ namespace std{
     class default_delete <mpv_opengl_cb_context>{
         public:
             void operator()(mpv_opengl_cb_context* mpv_gl) const {
-                mpv_opengl_cb_uninit_gl(mpv_gl);
+                if (mpv_gl != nullptr){
+                    mpv_opengl_cb_uninit_gl(mpv_gl);
+                }
             } ;
     };
 
@@ -25,7 +29,9 @@ namespace std{
     class default_delete <SDL_Window>{
         public:
             void operator()(SDL_Window* window) const {
-                SDL_DestroyWindow(window);
+                if (window != nullptr){
+                    SDL_DestroyWindow(window);
+                }
             } ;
     };
 
@@ -33,7 +39,19 @@ namespace std{
     class default_delete <SDL_Surface>{
         public:
             void operator()(SDL_Surface* surface) const {
-                SDL_FreeSurface(surface);
+                if (surface != nullptr){
+                    SDL_FreeSurface(surface);
+                }
+            }
+    };
+
+    template <>
+    class default_delete <SDL_Texture>{
+        public:
+            void operator()(SDL_Texture* texture) const {
+                if (texture != nullptr){
+                    SDL_DestroyTexture(texture);
+                }
             }
     };
 }   
