@@ -31,43 +31,47 @@ int main( int argc, char *argv[] )
     auto const mediaFile = args["<file>"].asString();
     const int factor     = args["--invert"].asBool() ? 1 : -1;
 
-    std::unique_ptr<mpv_handle> mpv(mpv_create());
-    if (!mpv){
-        throw std::runtime_error("mpv context init failed");
+    std::unique_ptr< mpv_handle > mpv( mpv_create() );
+    if( !mpv ) {
+        throw std::runtime_error( "mpv context init failed" );
     }
-    if (mpv_initialize(mpv.get()) < 0){
-        throw std::runtime_error("mpv initialization fail");
+    if( mpv_initialize( mpv.get() ) < 0 ) {
+        throw std::runtime_error( "mpv initialization fail" );
     }
 
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
-        throw std::runtime_error("failed to init SDL");
+        throw std::runtime_error( "failed to init SDL" );
     }
-    std::unique_ptr<SDL_Window> window(SDL_CreateWindow(
+    std::unique_ptr< SDL_Window > window( SDL_CreateWindow(
         "Toyunda Player",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         1280,
         720,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE ));
+        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE ) );
     if( !window ) {
-        throw std::runtime_error("failed to create SDL window");
+        throw std::runtime_error( "failed to create SDL window" );
     }
-    auto ptr = (mpv_opengl_cb_context*) mpv_get_sub_api(mpv.get(), MPV_SUB_API_OPENGL_CB) ;
-    std::unique_ptr<mpv_opengl_cb_context> mpv_gl(ptr);
-    if (!mpv_gl){
-        throw std::runtime_error("failed to create mpv GL API handle");
+    auto ptr = static_cast< mpv_opengl_cb_context * >(
+        mpv_get_sub_api( mpv.get(), MPV_SUB_API_OPENGL_CB ) );
+    std::unique_ptr< mpv_opengl_cb_context > mpv_gl( ptr );
+    if( !mpv_gl ) {
+        throw std::runtime_error( "failed to create mpv GL API handle" );
     }
 
     // retrieve opengl context DO NOT DELETE
     SDL_GLContext glcontext = SDL_GL_CreateContext( window.get() );
     if( !glcontext ) {
-        throw std::runtime_error("failed to create GL context");
+        throw std::runtime_error( "failed to create GL context" );
     }
     // ^ DO NOT DELETE ^
 
-    mpv_opengl_cb_init_gl( mpv_gl.get(), nullptr, [](void *, const char *name){
-        return SDL_GL_GetProcAddress( name );
-    }, nullptr);
+    mpv_opengl_cb_init_gl( mpv_gl.get(),
+                           nullptr,
+                           []( void *, const char *name ) {
+                               return SDL_GL_GetProcAddress( name );
+                           },
+                           nullptr );
 
     mpv_set_option_string( mpv.get(), "vo", "opengl-cb" );
 
@@ -76,33 +80,33 @@ int main( int argc, char *argv[] )
     mpv_command( mpv.get(), cmd );
     double speed = 1.0;
     mpv_set_property( mpv.get(), "speed", MPV_FORMAT_DOUBLE, &speed );
-    bool finished                 = false;
-    while (!finished) {
+    bool finished = false;
+    while( !finished ) {
         SDL_Event event;
         // check for SDL events DO NOT REMOVE
-        while (SDL_PollEvent(&event)){
-            switch (event.type) {
-            case SDL_QUIT:
-                finished = true ;
-            case SDL_WINDOWEVENT:
-            case SDL_KEYDOWN:
-                if (event.key.keysym.sym == SDLK_SPACE){
-                    mpv_command_string(mpv.get(), "cycle pause");
-                }
-                break;
+        while( SDL_PollEvent( &event ) ) {
+            switch( event.type ) {
+                case SDL_QUIT: finished = true;
+                case SDL_WINDOWEVENT:
+                case SDL_KEYDOWN:
+                    if( event.key.keysym.sym == SDLK_SPACE ) {
+                        mpv_command_string( mpv.get(), "cycle pause" );
+                    }
+                    break;
             }
         }
 
         // check for mpv events DO NOT REMOVE
         mpv_event *mp_event;
-        while ( (mp_event = mpv_wait_event(mpv.get(), 0))->event_id != MPV_EVENT_NONE ) {
+        while( ( mp_event = mpv_wait_event( mpv.get(), 0 ) )->event_id !=
+               MPV_EVENT_NONE ) {
             // do things with mp_event
         }
 
         int w, h;
-        SDL_GetWindowSize(window.get(), &w, &h);
-        mpv_opengl_cb_draw(mpv_gl.get(), 0, w, -h);
-        SDL_GL_SwapWindow(window.get());
+        SDL_GetWindowSize( window.get(), &w, &h );
+        mpv_opengl_cb_draw( mpv_gl.get(), 0, w, factor * h );
+        SDL_GL_SwapWindow( window.get() );
     }
     SDL_Quit();
     return 0;
