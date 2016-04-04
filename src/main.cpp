@@ -5,22 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern "C" {
-    #include <SDL.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
-    #include <mpv/client.h>
-    #include <mpv/opengl_cb.h>
-}
-
-
+#include <mpv/client.h>
+#include <mpv/opengl_cb.h>
 
 static Uint32 wakeup_on_mpv_redraw, wakeup_on_mpv_events;
-
-static void die(const char *msg)
-{
-    fprintf(stderr, "%s\n", msg);
-    exit(1);
-}
 
 static void *get_proc_address_mpv(void *fn_ctx, const char *name)
 {
@@ -42,20 +33,23 @@ static void on_mpv_redraw(void *ctx)
 int main(int argc, char *argv[])
 {
     if (argc != 2)
-        die("pass a single media file as argument");
+        throw "pass a single media file as argument";
 
     mpv_handle *mpv = mpv_create();
     if (!mpv){
-        die("context init failed");
+        throw "context init failed";
     }
 
     // Some minor options can only be set before mpv_initialize().
     if (mpv_initialize(mpv) < 0){
-        die("mpv init failed");
+        throw "mpv init failed";
     }
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0){
-        die("SDL init failed");
+        throw "SDL init failed";
+    }
+    if (TTF_Init() < 0 ){
+        throw "TTF init failed";
     }
 
     SDL_Window *window =
@@ -63,32 +57,32 @@ int main(int argc, char *argv[])
                          1000, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
                                     SDL_WINDOW_RESIZABLE);
     if (!window){
-        die("failed to create SDL window");
+        throw "failed to create SDL window";
     }
 
     // The OpenGL API is somewhat separate from the normal mpv API. This only
     // returns NULL if no OpenGL support is compiled.
     mpv_opengl_cb_context *mpv_gl = (mpv_opengl_cb_context*) mpv_get_sub_api(mpv, MPV_SUB_API_OPENGL_CB);
     if (!mpv_gl){
-        die("failed to create mpv GL API handle");
+        throw "failed to create mpv GL API handle";
     }
 
 
     SDL_GLContext glcontext = SDL_GL_CreateContext(window);
     if (!glcontext){
-        die("failed to create SDL GL context");
+        throw "failed to create SDL GL context";
     }
 
     // This makes mpv use the currently set GL context. It will use the callback
     // to resolve GL builtin functions, as well as extensions.
     if (mpv_opengl_cb_init_gl(mpv_gl, NULL, get_proc_address_mpv, NULL) < 0){
-        die("failed to initialize mpv GL context");
+        throw "failed to initialize mpv GL context";
     }
 
     // Actually using the opengl_cb state has to be explicitly requested.
     // Otherwise, mpv will create a separate platform window.
     if (mpv_set_option_string(mpv, "vo", "opengl-cb") < 0){
-        die("failed to set VO");
+        throw "failed to set VO";
     }
 
     // We use events for thread-safe notification of the SDL main loop.
@@ -99,7 +93,7 @@ int main(int argc, char *argv[])
     wakeup_on_mpv_redraw = SDL_RegisterEvents(1);
     wakeup_on_mpv_events = SDL_RegisterEvents(1);
     if (wakeup_on_mpv_redraw == (Uint32)-1 || wakeup_on_mpv_events == (Uint32)-1){
-        die("could not register events");
+        throw "could not register events";
     }
 
     // When normal mpv events are available.
@@ -173,8 +167,8 @@ int main(int argc, char *argv[])
             SDL_GL_SwapWindow(window);
         }
     }
-done:
-
+    TTF_Quit();
+    SDL_Quit();
     // Destroy the GL renderer and all of the GL objects it allocated. If video
     // is still running, the video track will be deselected.
     mpv_opengl_cb_uninit_gl(mpv_gl);
