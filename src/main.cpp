@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
     if (!window){
         throw "failed to create SDL window";
     }
+    auto *font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSansMono-Bold.ttf",72);
 
     // The OpenGL API is somewhat separate from the normal mpv API. This only
     // returns NULL if no OpenGL support is compiled.
@@ -167,6 +168,8 @@ int main(int argc, char *argv[])
             SDL_GL_SwapWindow(window);
         }
     }
+
+    TTF_CloseFont(font);
     TTF_Quit();
     SDL_Quit();
     // Destroy the GL renderer and all of the GL objects it allocated. If video
