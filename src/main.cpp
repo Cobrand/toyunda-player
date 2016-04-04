@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
         throw "failed to create SDL GL context";
     }
 
+    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
     // This makes mpv use the currently set GL context. It will use the callback
     // to resolve GL builtin functions, as well as extensions.
     if (mpv_opengl_cb_init_gl(mpv_gl, NULL, get_proc_address_mpv, NULL) < 0){
@@ -105,6 +107,8 @@ int main(int argc, char *argv[])
     //  users which run OpenGL on a different thread.)
     mpv_opengl_cb_set_update_callback(mpv_gl, on_mpv_redraw, NULL);
 
+    auto surface = TTF_RenderUTF8_Solid(font,"Hello World!",{255,0,0});
+    auto texture = SDL_CreateTextureFromSurface(renderer, surface);
     // Play this file. Note that this starts playback asynchronously.
     const char *cmd[] = {"loadfile", argv[1], NULL};
     mpv_command(mpv, cmd);
@@ -170,7 +174,10 @@ int main(int argc, char *argv[])
     }
 
     TTF_CloseFont(font);
+    SDL_FreeSurface(surface);
     TTF_Quit();
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
     SDL_Quit();
     // Destroy the GL renderer and all of the GL objects it allocated. If video
     // is still running, the video track will be deselected.
