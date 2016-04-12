@@ -7,6 +7,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_opengl.h>
 
 #include <mpv/client.h>
 #include <mpv/opengl_cb.h>
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
         throw "failed to create SDL GL context";
     }
 
-    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 
     // This makes mpv use the currently set GL context. It will use the callback
     // to resolve GL builtin functions, as well as extensions.
@@ -109,6 +110,10 @@ int main(int argc, char *argv[])
 
     auto surface = TTF_RenderUTF8_Solid(font,"Hello World!",{255,0,0});
     auto texture = SDL_CreateTextureFromSurface(renderer, surface);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // Play this file. Note that this starts playback asynchronously.
     const char *cmd[] = {"loadfile", argv[1], NULL};
     mpv_command(mpv, cmd);
@@ -169,6 +174,15 @@ int main(int argc, char *argv[])
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
             mpv_opengl_cb_draw(mpv_gl, 0, w, -h);
+            GLuint vbo;
+            glBegin(GL_TRIANGLES);
+             glColor3f(1,0,0);
+             glVertex3f(300,200,0);
+             glColor4f(0,1,0,0);
+             glVertex3f(100,400,0);
+             glColor3f(0,0,1);
+             glVertex3f(500,400,0); //end
+             glEnd();
             SDL_GL_SwapWindow(window);
         }
     }
