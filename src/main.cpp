@@ -108,10 +108,22 @@ int main(int argc, char *argv[])
     //  users which run OpenGL on a different thread.)
     mpv_opengl_cb_set_update_callback(mpv_gl, on_mpv_redraw, NULL);
 
-    auto surface = TTF_RenderUTF8_Solid(font,"Hello World!",{255,0,0});
+    auto surface = TTF_RenderUTF8_Blended(font,"Hello World!",{128,0,128});
     auto texture = SDL_CreateTextureFromSurface(renderer, surface);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GLuint TextureID = 0;
+    glGenTextures(1, &TextureID);
+    std::cout << TextureID << std::endl ;
+    glBindTexture(GL_TEXTURE_2D, TextureID);
+    int Mode = GL_RGBA;
+    std::cout << surface->w << ";" << surface->h << std::endl ;
+    /*std::cout << surface->format->BytesPerPixel << std::endl ;
+    if(surface->format->BytesPerPixel == 4) {
+        Mode = GL_RGBA;
+        std::cout << "RGBA" << std::endl ;
+    }*/
+    glTexImage2D(GL_TEXTURE_2D, 0, Mode, surface->w, surface->h, 0, Mode, GL_UNSIGNED_BYTE, surface->pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // Play this file. Note that this starts playback asynchronously.
@@ -174,6 +186,22 @@ int main(int argc, char *argv[])
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
             mpv_opengl_cb_draw(mpv_gl, 0, w, -h);
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, TextureID);
+
+            // For Ortho mode, of course
+            int X = 0;
+            int Y = 0;
+            int Width = surface->w;
+            int Height = surface->h;
+
+            glBegin(GL_QUADS);
+                glTexCoord2f(0, 0); glVertex3f(X, Y, 0);
+                glTexCoord2f(1, 0); glVertex3f(X + Width, Y, 0);
+                glTexCoord2f(1, 1); glVertex3f(X + Width, Y + Height, 0);
+                glTexCoord2f(0, 1); glVertex3f(X, Y + Height, 0);
+            glEnd();
+            glDisable(GL_TEXTURE_2D);
             GLuint vbo;
             glBegin(GL_TRIANGLES);
              glColor3f(1,0,0);
