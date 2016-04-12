@@ -12,6 +12,13 @@
 #include <mpv/client.h>
 #include <mpv/opengl_cb.h>
 
+int puissance2sup(int i)
+{
+    double logbase2 = log(i) / log(2);
+    return (int) floor(pow(2.0, ceil(logbase2)));
+}
+
+
 static Uint32 wakeup_on_mpv_redraw, wakeup_on_mpv_events;
 
 static void *get_proc_address_mpv(void *fn_ctx, const char *name)
@@ -108,8 +115,29 @@ int main(int argc, char *argv[])
     //  users which run OpenGL on a different thread.)
     mpv_opengl_cb_set_update_callback(mpv_gl, on_mpv_redraw, NULL);
 
-    auto surface = TTF_RenderUTF8_Blended(font,"Hello World!",{128,0,128});
+    SDL_Color text_color = SDL_Color {
+        r : 255,
+        g : 255,
+        b : 0,
+        a : 128
+    };
+    auto surface = TTF_RenderUTF8_Blended(font,"Hello World!",text_color);
     auto texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+
+    int bpp;
+	Uint32 Rmask, Gmask, Bmask, Amask;
+	SDL_PixelFormatEnumToMasks(
+		SDL_PIXELFORMAT_ABGR8888, &bpp,
+		&Rmask, &Gmask, &Bmask, &Amask
+	);
+    int glw = puissance2sup(surface->w);
+    int glh = puissance2sup(surface->h);
+    SDL_Surface *img_rgba8888 = SDL_CreateRGBSurface(0,
+					glw, glh, bpp,
+					Rmask, Gmask, Bmask, Amask
+				);
+    SDL_BlitSurface( surface, NULL, img_rgba8888, NULL );
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     GLuint TextureID = 0;
@@ -118,12 +146,12 @@ int main(int argc, char *argv[])
     glBindTexture(GL_TEXTURE_2D, TextureID);
     int Mode = GL_RGBA;
     std::cout << surface->w << ";" << surface->h << std::endl ;
-    /*std::cout << surface->format->BytesPerPixel << std::endl ;
-    if(surface->format->BytesPerPixel == 4) {
+    std::cout << surface->format->format << std::endl ;
+    /*if(surface->format->BytesPerPixel == 4) {
         Mode = GL_RGBA;
         std::cout << "RGBA" << std::endl ;
     }*/
-    glTexImage2D(GL_TEXTURE_2D, 0, Mode, surface->w, surface->h, 0, Mode, GL_UNSIGNED_BYTE, surface->pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, Mode, img_rgba8888->w, img_rgba8888->h, 0, Mode, GL_UNSIGNED_BYTE, img_rgba8888->pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // Play this file. Note that this starts playback asynchronously.
@@ -188,12 +216,11 @@ int main(int argc, char *argv[])
             mpv_opengl_cb_draw(mpv_gl, 0, w, -h);
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, TextureID);
-
             // For Ortho mode, of course
             int X = 0;
             int Y = 0;
-            int Width = surface->w;
-            int Height = surface->h;
+            int Width = img_rgba8888->w;
+            int Height = img_rgba8888->h;
 
             glBegin(GL_QUADS);
                 glTexCoord2f(0, 0); glVertex3f(X, Y, 0);
@@ -210,6 +237,7 @@ int main(int argc, char *argv[])
              glVertex3f(100,400,0);
              glColor3f(0,0,1);
              glVertex3f(500,400,0); //end
+             glColor4f(1,1,1,1);
              glEnd();
             SDL_GL_SwapWindow(window);
         }
