@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <windows.h>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_opengl.h>
@@ -38,8 +40,18 @@ static void on_mpv_redraw(void *ctx)
     SDL_PushEvent(&event);
 }
 
+int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, 
+LPSTR szCmdLine, int iCmdShow){
+	/*
+	return 0 ;
+}
+
 int main(int argc, char *argv[])
 {
+	*/
+	char * argv[] = {"toyunda_player","jojo.avi"};
+	int argc = 2 ;
+	
     if (argc != 2)
         throw "pass a single media file as argument";
 
@@ -67,7 +79,8 @@ int main(int argc, char *argv[])
     if (!window){
         throw "failed to create SDL window";
     }
-    auto *font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSansMono-Bold.ttf",72);
+	
+    auto *font = TTF_OpenFont("DEJAVUSANSMONO-BOLD.TTF",72);
 
     // The OpenGL API is somewhat separate from the normal mpv API. This only
     // returns NULL if no OpenGL support is compiled.
