@@ -40,6 +40,7 @@ static void on_mpv_redraw(void *ctx)
     SDL_PushEvent(&event);
 }
 
+#define SHAPE_SIZE 16
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, 
 LPSTR szCmdLine, int iCmdShow){
 	/*
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
         throw "failed to create SDL GL context";
     }
 
-    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     // This makes mpv use the currently set GL context. It will use the callback
     // to resolve GL builtin functions, as well as extensions.
@@ -160,10 +161,11 @@ int main(int argc, char *argv[])
     int Mode = GL_RGBA;
     std::cout << surface->w << ";" << surface->h << std::endl ;
     std::cout << surface->format->format << std::endl ;
-    /*if(surface->format->BytesPerPixel == 4) {
-        Mode = GL_RGBA;
-        std::cout << "RGBA" << std::endl ;
-    }*/
+    //if(surface->format->BytesPerPixel == 4) {
+    //    Mode = GL_RGBA;
+    //    std::cout << "RGBA" << std::endl ;
+    //}
+	
     glTexImage2D(GL_TEXTURE_2D, 0, Mode, img_rgba8888->w, img_rgba8888->h, 0, Mode, GL_UNSIGNED_BYTE, img_rgba8888->pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -227,6 +229,13 @@ int main(int argc, char *argv[])
             // - See opengl_cb.h on what OpenGL environment mpv expects, and
             //   other API details.
             mpv_opengl_cb_draw(mpv_gl, 0, w, -h);
+			glViewport( 0, 0, w, h);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0,w,h,0,-1,1);
+			//modelview matrix
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, TextureID);
             // For Ortho mode, of course
@@ -242,6 +251,8 @@ int main(int argc, char *argv[])
                 glTexCoord2f(0, 1); glVertex3f(X, Y + Height, 0);
             glEnd();
             glDisable(GL_TEXTURE_2D);
+			//glClearColor(1,1,0,1);
+			//glClear(GL_COLOR_BUFFER_BIT);
             GLuint vbo;
             glBegin(GL_TRIANGLES);
              glColor3f(1,0,0);
@@ -252,6 +263,8 @@ int main(int argc, char *argv[])
              glVertex3f(500,400,0); //end
              glColor4f(1,1,1,1);
              glEnd();
+			//SDL_RenderPresent(renderer);
+			
             SDL_GL_SwapWindow(window);
         }
     }
@@ -267,5 +280,6 @@ int main(int argc, char *argv[])
     mpv_opengl_cb_uninit_gl(mpv_gl);
 
     mpv_terminate_destroy(mpv);
+	
     return 0;
 }
