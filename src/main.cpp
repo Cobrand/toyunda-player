@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef WIN32
 #include <windows.h>
+#endif
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -41,18 +43,14 @@ static void on_mpv_redraw(void *ctx)
 }
 
 #define SHAPE_SIZE 16
-int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, 
+#ifdef WIN32
+int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 LPSTR szCmdLine, int iCmdShow){
-	/*
-	return 0 ;
-}
-
-int main(int argc, char *argv[])
-{
-	*/
-	char * argv[] = {"toyunda_player","jojo.avi"};
-	int argc = 2 ;
-	
+    char * argv[] = {"toyunda_player","jojo.avi"};
+    int argc = 2 ;
+#else
+int main(int argc, char *argv[]){
+#endif
     if (argc != 2)
         throw "pass a single media file as argument";
 
@@ -80,9 +78,11 @@ int main(int argc, char *argv[])
     if (!window){
         throw "failed to create SDL window";
     }
-	
-    auto *font = TTF_OpenFont("DEJAVUSANSMONO-BOLD.TTF",72);
-
+#ifndef WIN32
+    auto *font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSansMono.ttf",72);
+#else
+    auto *font = TTF_OpenFont("/usr/share/",72);
+#endif
     // The OpenGL API is somewhat separate from the normal mpv API. This only
     // returns NULL if no OpenGL support is compiled.
     mpv_opengl_cb_context *mpv_gl = (mpv_opengl_cb_context*) mpv_get_sub_api(mpv, MPV_SUB_API_OPENGL_CB);
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
         throw "failed to create SDL GL context";
     }
 
-    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 
     // This makes mpv use the currently set GL context. It will use the callback
     // to resolve GL builtin functions, as well as extensions.
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
     //    Mode = GL_RGBA;
     //    std::cout << "RGBA" << std::endl ;
     //}
-	
+
     glTexImage2D(GL_TEXTURE_2D, 0, Mode, img_rgba8888->w, img_rgba8888->h, 0, Mode, GL_UNSIGNED_BYTE, img_rgba8888->pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
              glColor4f(1,1,1,1);
              glEnd();
 			//SDL_RenderPresent(renderer);
-			
+
             SDL_GL_SwapWindow(window);
         }
     }
@@ -280,6 +280,6 @@ int main(int argc, char *argv[])
     mpv_opengl_cb_uninit_gl(mpv_gl);
 
     mpv_terminate_destroy(mpv);
-	
+
     return 0;
 }
